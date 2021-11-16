@@ -28,7 +28,7 @@ func main() {
 		}
 	}
 
-	log := artnet.NewDefaultLogger()
+	log := artnet.NewDefaultLogger("debug")
 	n := artnet.NewNode("node-1", code.StNode, ip, log)
 	n.Start()
 

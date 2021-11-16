@@ -26,7 +26,7 @@ func main() {
 		}
 	}
 
-	log := artnet.NewDefaultLogger()
+	log := artnet.NewDefaultLogger("debug")
 	c := artnet.NewController("controller-1", ip, log)
 	c.Start()
 

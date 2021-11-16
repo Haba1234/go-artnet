@@ -6,7 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Fields are a representation of formatted log fields
+// Fields are a representation of formatted log fields.
 type Fields map[string]interface{}
 
 // Logger is the interface for a logger
@@ -19,8 +19,8 @@ type logger struct {
 	*logrus.Entry
 }
 
-// NewDefaultLogger returns a Logger based on logrus
-func NewDefaultLogger() Logger {
+// NewDefaultLogger returns a Logger based on logrus.
+func NewDefaultLogger(level string) Logger {
 	log := &struct {
 		*logrus.Logger
 	}{
@@ -34,24 +34,28 @@ func NewDefaultLogger() Logger {
 
 	log.Formatter = customFormatter
 
-	// Output to stdout instead of the default stderr
-	// Can be any io.Writer, see below for File example
+	// Output to stdout instead of the default stderr.
+	// Can be any io.Writer, see below for File example.
 	log.Out = os.Stdout
 
 	// Only log the debug severity or above.
-	log.Level = logrus.DebugLevel
+	lvl, err := logrus.ParseLevel(level)
+	if err != nil {
+		lvl = logrus.DebugLevel
+	}
+	log.Level = lvl
 
-	// Disable concurrency mutex as we use Stdout
+	// Disable concurrency mutex as we use Stdout.
 	log.SetNoLock()
 	return &logger{Entry: log.WithFields(nil)}
 }
 
-// NewLogger creates a new logger from given logrus logger
+// NewLogger creates a new logger from given logrus logger.
 func NewLogger(log *logrus.Entry) Logger {
 	return &logger{log}
 }
 
-// With will add the fields to the formatted log entry
+// With will add the fields to the formatted log entry.
 func (l *logger) With(fields Fields) *logger {
 	return &logger{Entry: l.WithFields(logrus.Fields(fields))}
 }
