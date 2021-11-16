@@ -1,7 +1,7 @@
 package packet
 
 import (
-	"github.com/jsimonetti/go-artnet/packet/code"
+	"github.com/Haba1234/go-artnet/packet/code"
 )
 
 var _ ArtNetPacket = &ArtTriggerPacket{}
@@ -78,7 +78,7 @@ func (p *ArtTriggerPacket) MarshalBinary() ([]byte, error) {
 	return marshalPacket(p)
 }
 
-// UnmarshalBinary unmarshals the contents of a byte slice into an ArtTriggerPacket.
+// UnmarshalBinary unmarshal the contents of a byte slice into an ArtTriggerPacket.
 func (p *ArtTriggerPacket) UnmarshalBinary(b []byte) error {
 	return unmarshalPacket(p, b)
 }

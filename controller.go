@@ -1,25 +1,25 @@
 package artnet
 
 import (
-	"bytes"
 	"fmt"
 	"net"
 	"sync"
 	"time"
 
-	"github.com/jsimonetti/go-artnet/packet"
-	"github.com/jsimonetti/go-artnet/packet/code"
+	"github.com/Haba1234/go-artnet/packet"
+	"github.com/Haba1234/go-artnet/packet/code"
 )
 
 var broadcastAddr = net.UDPAddr{
-	IP:   []byte{0x02, 0xff, 0xff, 0xff},
-	Port: int(packet.ArtNetPort),
+	//IP:   []byte{0xff, 0xff, 0xff, 0xff},
+	IP:   []byte{192, 168, 6, 0xff},
+	Port: packet.ArtNetPort,
 }
 
-// we poll for new nodes every 3 seconds
+// we poll for new nodes every 3 seconds.
 var pollInterval = 3 * time.Second
 
-// ControlledNode hols the configuration of a node we control
+// ControlledNode hols the configuration of a node we control.
 type ControlledNode struct {
 	LastSeen   time.Time
 	Node       NodeConfig
@@ -36,7 +36,7 @@ type dmxBuffer struct {
 	Stale      bool
 }
 
-// setDMXBuffer will update the buffer on a universe address
+// setDMXBuffer will update the buffer on a universe address.
 func (cn *ControlledNode) setDMXBuffer(dmx [512]byte, address Address) error {
 	cn.nodeLock.Lock()
 	defer cn.nodeLock.Unlock()
@@ -54,7 +54,7 @@ func (cn *ControlledNode) setDMXBuffer(dmx [512]byte, address Address) error {
 	return nil
 }
 
-// dmxUpdate will create an ArtDMXPacket and marshal it into bytes
+// dmxUpdate will create an ArtDMXPacket and marshal it into bytes.
 func (cn *ControlledNode) dmxUpdate(address Address) (b []byte, err error) {
 	var buf *dmxBuffer
 	var ok bool
@@ -78,7 +78,7 @@ func (cn *ControlledNode) dmxUpdate(address Address) (b []byte, err error) {
 	return
 }
 
-// Controller holds the information for a controller
+// Controller holds the information for a controller.
 type Controller struct {
 	// cNode is the Node for the cNode
 	cNode *Node
@@ -98,12 +98,12 @@ type Controller struct {
 	gcTicker   *time.Ticker
 }
 
-// NewController return a Controller
+// NewController return a Controller.
 func NewController(name string, ip net.IP, log Logger, opts ...Option) *Controller {
 	c := &Controller{
 		cNode:  NewNode(name, code.StController, ip, log),
 		log:    log,
-		maxFPS: 1000,
+		maxFPS: 1, //1000,
 	}
 
 	for _, opt := range opts {
@@ -113,7 +113,7 @@ func NewController(name string, ip net.IP, log Logger, opts ...Option) *Controll
 	return c
 }
 
-// Start will start this controller
+// Start will start this controller.
 func (c *Controller) Start() error {
 	c.OutputAddress = make(map[Address]*ControlledNode)
 	c.InputAddress = make(map[Address]*ControlledNode)
@@ -121,7 +121,7 @@ func (c *Controller) Start() error {
 	c.cNode.log = c.log.With(Fields{"type": "Node"})
 	c.log = c.log.With(Fields{"type": "Controller"})
 	if err := c.cNode.Start(); err != nil {
-		return fmt.Errorf("failed to start controller node: %v", err)
+		return fmt.Errorf("failed to start controller node: %w", err)
 	}
 
 	c.pollTicker = time.NewTicker(pollInterval)
@@ -132,7 +132,7 @@ func (c *Controller) Start() error {
 	return c.cNode.shutdownErr
 }
 
-// Stop will stop this controller
+// Stop will stop this controller.
 func (c *Controller) Stop() {
 	c.pollTicker.Stop()
 	c.gcTicker.Stop()
@@ -145,7 +145,7 @@ func (c *Controller) Stop() {
 	close(c.shutdownCh)
 }
 
-// pollLoop will routinely poll for new nodes
+// pollLoop will routinely poll for new nodes.
 func (c *Controller) pollLoop() {
 	artPoll := &packet.ArtPollPacket{
 		TalkToMe: new(code.TalkToMe).WithReplyOnChange(true),
@@ -163,6 +163,7 @@ func (c *Controller) pollLoop() {
 	c.cNode.sendCh <- netPayload{
 		address: broadcastAddr,
 		data:    b,
+		task:    "ArtPollPacket",
 	}
 	c.cNode.pollCh <- packet.ArtPollPacket{}
 
@@ -174,6 +175,7 @@ func (c *Controller) pollLoop() {
 			c.cNode.sendCh <- netPayload{
 				address: broadcastAddr,
 				data:    b,
+				task:    "ArtPollPacket",
 			}
 			c.cNode.pollCh <- packet.ArtPollPacket{}
 
@@ -207,7 +209,7 @@ func (c *Controller) pollLoop() {
 }
 
 // SendDMXToAddress will set the DMXBuffer for a destination address
-// and update the node
+// and update the node.
 func (c *Controller) SendDMXToAddress(dmx [512]byte, address Address) {
 	c.log.With(Fields{"address": address.String()}).Debug("received update channels")
 
@@ -228,7 +230,7 @@ func (c *Controller) SendDMXToAddress(dmx [512]byte, address Address) {
 	}
 }
 
-// dmxUpdateLoop will periodically update nodes until shutdown
+// dmxUpdateLoop will periodically update nodes until shutdown.
 func (c *Controller) dmxUpdateLoop() {
 	fpsInterval := time.Duration(c.maxFPS)
 	ticker := time.NewTicker(time.Second / fpsInterval)
@@ -247,6 +249,7 @@ func (c *Controller) dmxUpdateLoop() {
 		c.cNode.sendCh <- netPayload{
 			address: node.UDPAddress,
 			data:    b,
+			task:    "dmxUpdateLoop",
 		}
 		return nil
 	}
@@ -288,13 +291,13 @@ func (c *Controller) dmxUpdateLoop() {
 
 // updateNode will add a Node to the list of known nodes
 // this assumes that there are no universe address collisions
-// in the future we should probably be prepared to handle that too
+// in the future we should probably be prepared to handle that too.
 func (c *Controller) updateNode(cfg NodeConfig) error {
 	c.nodeLock.Lock()
 	defer c.nodeLock.Unlock()
 
 	for i := range c.Nodes {
-		if bytes.Equal(cfg.IP, c.Nodes[i].Node.IP) {
+		if net.IP.Equal(cfg.IP, c.Nodes[i].Node.IP) {
 			// update this node, since we already know about it
 			c.log.With(Fields{"node": cfg.Name, "ip": cfg.IP.String()}).Debug("updated node")
 			// remove references to this node from the output map
@@ -345,13 +348,13 @@ func (c *Controller) updateNode(cfg NodeConfig) error {
 	return nil
 }
 
-// deleteNode will delete a Node from the list of known nodes
+// deleteNode will delete a Node from the list of known nodes.
 func (c *Controller) deleteNode(node NodeConfig) error {
 	c.nodeLock.Lock()
 	defer c.nodeLock.Unlock()
 
 	for i := range c.Nodes {
-		if bytes.Equal(node.IP, c.Nodes[i].Node.IP) {
+		if net.IP.Equal(node.IP, c.Nodes[i].Node.IP) {
 			// node found, remove it from the list
 			// remove references to this node from the output map
 			for _, port := range c.Nodes[i].Node.OutputPorts {
@@ -368,7 +371,7 @@ func (c *Controller) deleteNode(node NodeConfig) error {
 }
 
 // gcNode will remove stale Nodes from the list of known nodes
-// it will loop through the list of nodes and remove nodes older then X seconds
+// it will loop through the list of nodes and remove nodes older then X seconds.
 func (c *Controller) gcNode() {
 	c.nodeLock.Lock()
 	defer c.nodeLock.Unlock()

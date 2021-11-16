@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jsimonetti/go-artnet/packet/code"
-	"github.com/jsimonetti/go-artnet/version"
+	"github.com/Haba1234/go-artnet/packet/code"
+	"github.com/Haba1234/go-artnet/version"
 )
 
 // Various errors which may occur when attempting to marshal or unmarshal
@@ -29,13 +29,13 @@ type ArtNetPacket interface {
 	GetOpCode() code.OpCode
 }
 
-// ArtNet is the fixed string "Art-Net" terminated with a zero
+// ArtNet is the fixed string "Art-Net" terminated with a zero.
 var ArtNet = [8]byte{0x41, 0x72, 0x74, 0x2d, 0x4e, 0x65, 0x74, 0x00}
 
 // ArtNetPort is the fixed ArtNet port 6454.
 const ArtNetPort = 6454
 
-// Header contains the base header for an ArtNet Packet
+// Header contains the base header for an ArtNet Packet.
 type Header struct {
 	// ID is an Array of 8 characters, the final character is a null termination.
 	// Value should be []byte{‘A’,‘r’,‘t’,‘-‘,‘N’,‘e’,‘t’,0x00}
@@ -49,7 +49,7 @@ type Header struct {
 	Version [2]byte
 }
 
-// GetOpCode returns the OpCode parsed by validate method
+// GetOpCode returns the OpCode parsed by validate method.
 func (p *Header) GetOpCode() code.OpCode {
 	return p.OpCode
 }

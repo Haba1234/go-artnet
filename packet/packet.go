@@ -3,10 +3,10 @@ package packet
 import (
 	"fmt"
 
-	"github.com/jsimonetti/go-artnet/packet/code"
+	"github.com/Haba1234/go-artnet/packet/code"
 )
 
-// Unmarshal will unmarshal the bytes into an ArtNetPacket
+// Unmarshal will unmarshal the bytes into an ArtNetPacket.
 func Unmarshal(b []byte) (p ArtNetPacket, err error) {
 	h := Header{}
 	err = h.unmarshal(b)
@@ -34,6 +34,7 @@ func Unmarshal(b []byte) (p ArtNetPacket, err error) {
 		p = &ArtAddressPacket{}
 	case code.OpInput:
 	case code.OpTodRequest:
+		p = &ArtTodRequestPacket{}
 	case code.OpTodData:
 	case code.OpTodControl:
 	case code.OpRdm:

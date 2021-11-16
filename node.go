@@ -1,20 +1,21 @@
 package artnet
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net"
 	"sync"
 	"time"
 
-	"github.com/jsimonetti/go-artnet/packet"
-	"github.com/jsimonetti/go-artnet/packet/code"
+	"github.com/Haba1234/go-artnet/packet"
+	"github.com/Haba1234/go-artnet/packet/code"
 )
 
-// NodeCallbackFn gets called when a new packet has been received and needs to be processed
+// NodeCallbackFn gets called when a new packet has been received and needs to be processed.
 type NodeCallbackFn func(p packet.ArtNetPacket)
 
-// Node is the information known about a node
+// Node is the information known about a node.
 type Node struct {
 	// Config holds the configuration of this node
 	Config NodeConfig
@@ -41,14 +42,15 @@ type Node struct {
 	callbacks map[code.OpCode]NodeCallbackFn
 }
 
-// netPayload contains bytes read from the network and/or an error
+// netPayload contains bytes read from the network and/or an error.
 type netPayload struct {
 	address net.UDPAddr
 	err     error
 	data    []byte
+	task    string
 }
 
-// NewNode return a Node
+// NewNode return a Node.
 func NewNode(name string, style code.StyleCode, ip net.IP, log Logger) *Node {
 	n := &Node{
 		Config: NodeConfig{
@@ -76,11 +78,11 @@ func NewNode(name string, style code.StyleCode, ip net.IP, log Logger) *Node {
 		Port: packet.ArtNetPort,
 		Zone: "",
 	}
-
+	n.log.With(Fields{"config": n.Config}).Debug("node started")
 	return n
 }
 
-// Stop will stop all running routines and close the network connection
+// Stop will stop all running routines and close the network connection.
 func (n *Node) Stop() {
 	n.shutdownLock.Lock()
 	n.shutdown = true
@@ -99,7 +101,7 @@ func (n *Node) isShutdown() bool {
 	return n.shutdown
 }
 
-// Start will start the controller
+// Start will start the controller.
 func (n *Node) Start() error {
 	n.log.With(Fields{"ip": n.Config.IP.String(), "type": n.Config.Type.String()}).Debug("node started")
 
@@ -112,7 +114,7 @@ func (n *Node) Start() error {
 
 	c, err := net.ListenPacket("udp4", fmt.Sprintf(":%d", packet.ArtNetPort))
 	if err != nil {
-		n.shutdownErr = fmt.Errorf("error net.ListenPacket: %s", err)
+		n.shutdownErr = fmt.Errorf("error net.ListenPacket: %w", err)
 		n.log.With(Fields{"error": err}).Error("error net.ListenPacket")
 		return err
 	}
@@ -126,11 +128,11 @@ func (n *Node) Start() error {
 }
 
 // pollReplyLoop loops to reply to ArtPoll packets
-// when a controller asks for continuous updates, we do that using a ticker
+// when a controller asks for continuous updates, we do that using a ticker.
 func (n *Node) pollReplyLoop() {
 	var timer time.Ticker
 
-	// create an ArtPollReply packet to send out in response to an ArtPoll packet
+	// create an ArtPollReply packet to send out in response to an ArtPoll packet.
 	p := ArtPollReplyFromConfig(n.Config)
 	me, err := p.MarshalBinary()
 	if err != nil {
@@ -138,20 +140,21 @@ func (n *Node) pollReplyLoop() {
 		return
 	}
 
-	// loop until shutdown
+	// loop until shutdown.
 	for {
 		select {
 		case <-timer.C:
 			// if we should regularly send replies (can be requested by the controller)
-			// we send it here
+			// we send it here.
 
 		case <-n.pollCh:
 			// reply with pollReply
 			n.log.With(nil).Debug("sending ArtPollReply")
-
+			n.log.With(Fields{"address": broadcastAddr}).Debug("Отправка на адрес")
 			n.sendCh <- netPayload{
 				address: broadcastAddr,
 				data:    me,
+				task:    "pollReplyLoop",
 			}
 
 			// TODO: if we are asked to send changes regularly, set the Ticker here
@@ -162,7 +165,7 @@ func (n *Node) pollReplyLoop() {
 	}
 }
 
-// sendLoop is used to send packets to the network
+// sendLoop is used to send packets to the network.
 func (n *Node) sendLoop() {
 	// loop until shutdown
 	for {
@@ -180,8 +183,12 @@ func (n *Node) sendLoop() {
 				n.log.With(Fields{"error": err}).Debugf("error writing packet")
 				continue
 			}
-			n.log.With(Fields{"dst": payload.address.String(), "bytes": num}).Debugf("packet sent")
-
+			n.log.With(Fields{
+				"dst":   payload.address.IP.String(),
+				"bytes": num,
+				"task":  payload.task,
+				//"data":  fmt.Sprintf("%v", payload.data),
+			}).Debug("packet sent")
 		}
 	}
 }
@@ -190,10 +197,10 @@ func (n *Node) sendLoop() {
 // it starts a goroutine for dumping the msgs onto a channel,
 // the payload from that channel is then fed into a handler
 // due to the nature of broadcasting, we see our own sent
-// packets to, but we ignore them
+// packets to, but we ignore them.
 func (n *Node) recvLoop() {
 	// start a routine that will read data from n.conn
-	// and (if not shutdown), send to the recvCh
+	// and (if not shutdown), send to the recvCh.
 	go func() {
 		b := make([]byte, 4096)
 		for {
@@ -204,12 +211,12 @@ func (n *Node) recvLoop() {
 
 			if n.localAddr.IP.Equal(from.IP) {
 				// this was sent by me, so we ignore it
-				//n.log.With(Fields{"src": from.String(), "bytes": num}).Debugf("ignoring received packet from self")
+				n.log.With(Fields{"src": from.String(), "bytes": num}).Debugf("ignoring received packet from self")
 				continue
 			}
 
 			if err != nil {
-				if err == io.EOF {
+				if errors.Is(err, io.EOF) {
 					return
 				}
 
@@ -222,21 +229,26 @@ func (n *Node) recvLoop() {
 				address: *from,
 				err:     err,
 				data:    make([]byte, num),
+				task:    "recvLoop",
 			}
 			copy(payload.data, b)
 			n.recvCh <- payload
 		}
 	}()
 
-	// loop until shutdown
+	// loop until shutdown.
 	for {
 		select {
 		case payload := <-n.recvCh:
+			n.log.With(Fields{
+				"src": payload.address.IP.String(),
+				//"data": fmt.Sprintf("%v", payload.data),
+			}).Debug("loop until shutdown")
 			p, err := packet.Unmarshal(payload.data)
 			if err != nil {
 				n.log.With(Fields{
-					"src":  payload.address.IP.String(),
-					"data": fmt.Sprintf("%v", payload.data),
+					"src": payload.address.IP.String(),
+					//"data": fmt.Sprintf("%v", payload.data),
 				}).Warnf("failed to parse packet: %v", err)
 				continue
 			}
@@ -245,7 +257,7 @@ func (n *Node) recvLoop() {
 			// unmarshalled packet that must have a valid
 			// opcode which we can now extract and handle
 			// the packet by calling the corresponding
-			// callback
+			// callback.
 			go n.handlePacket(p)
 
 		case <-n.shutdownCh:
@@ -254,7 +266,7 @@ func (n *Node) recvLoop() {
 	}
 }
 
-// handlePacket contains the logic for dealing with incoming packets
+// handlePacket contains the logic for dealing with incoming packets.
 func (n *Node) handlePacket(p packet.ArtNetPacket) {
 	callback, ok := n.callbacks[p.GetOpCode()]
 	if !ok {

@@ -4,34 +4,34 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/jsimonetti/go-artnet/packet"
-	"github.com/jsimonetti/go-artnet/packet/code"
+	"github.com/Haba1234/go-artnet/packet"
+	"github.com/Haba1234/go-artnet/packet/code"
 )
 
-// Address contains a universe address
+// Address contains a universe address.
 type Address struct {
 	Net    uint8 // 0-128
 	SubUni uint8
 }
 
-// String returns a string representation of Address
+// String returns a string representation of Address.
 func (a Address) String() string {
 	return fmt.Sprintf("%d:%d.%d", a.Net, a.SubUni>>4, a.SubUni&0x0f)
 }
 
-// Integer returns the integer representation of Address
+// Integer returns the integer representation of Address.
 func (a Address) Integer() int {
 	return int(uint16(a.Net)<<8 | uint16(a.SubUni))
 }
 
-// InputPort contains information for an input port
+// InputPort contains information for an input port.
 type InputPort struct {
 	Address Address
 	Type    code.PortType
 	Status  code.GoodInput
 }
 
-// OutputPort contains information for an input port
+// OutputPort contains information for an output port.
 type OutputPort struct {
 	Address Address
 	Type    code.PortType
@@ -63,8 +63,8 @@ type NodeConfig struct {
 	OutputPorts []OutputPort
 }
 
-// ArtPollReplyFromConfig will return a ArtPollReplyPacket from the NodeConfig
-// TODO: make this a more complete packet by adding the other NodeConfig fields
+// ArtPollReplyFromConfig will return a ArtPollReplyPacket from the NodeConfig.
+// TODO: make this a more complete packet by adding the other NodeConfig fields.
 func ArtPollReplyFromConfig(c NodeConfig) *packet.ArtPollReplyPacket {
 	p := &packet.ArtPollReplyPacket{
 		OpCode:      code.OpPollReply,
@@ -91,7 +91,7 @@ func ArtPollReplyFromConfig(c NodeConfig) *packet.ArtPollReplyPacket {
 	return p
 }
 
-// ConfigFromArtPollReply will return a Config from the information in the ArtPollReplyPacket
+// ConfigFromArtPollReply will return a Config from the information in the ArtPollReplyPacket.
 func ConfigFromArtPollReply(p packet.ArtPollReplyPacket) NodeConfig {
 	nodeConfig := NodeConfig{
 		OEM:          p.Oem,
@@ -142,7 +142,7 @@ func ConfigFromArtPollReply(p packet.ArtPollReplyPacket) NodeConfig {
 }
 
 // decodeString will take a byte slice and create an ASCII string
-// the ASCII strings are 0 terminated
+// the ASCII strings are 0 terminated.
 func decodeString(b []byte) (str string) {
 	for _, c := range b {
 		if c == 0 {

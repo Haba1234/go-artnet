@@ -5,17 +5,16 @@ import (
 	"net"
 	"time"
 
-	"github.com/jsimonetti/go-artnet/packet/code"
-
-	"github.com/jsimonetti/go-artnet"
+	"github.com/Haba1234/go-artnet"
+	"github.com/Haba1234/go-artnet/packet/code"
 )
 
 func main() {
-
-	artsubnet := "2.0.0.0/8"
+	artsubnet := "192.168.6.0/24"
 	_, cidrnet, _ := net.ParseCIDR(artsubnet)
 
 	addrs, err := net.InterfaceAddrs()
+
 	if err != nil {
 		fmt.Printf("error getting ips: %s\n", err)
 	}

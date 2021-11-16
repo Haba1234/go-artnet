@@ -5,24 +5,23 @@ import (
 	"net"
 	"time"
 
-	"github.com/jsimonetti/go-artnet"
+	"github.com/Haba1234/go-artnet"
 )
 
 func main() {
+	artSubnet := "192.168.6.0/24"
+	_, cidrNet, _ := net.ParseCIDR(artSubnet)
 
-	artsubnet := "2.0.0.0/8"
-	_, cidrnet, _ := net.ParseCIDR(artsubnet)
-
-	addrs, err := net.InterfaceAddrs()
+	address, err := net.InterfaceAddrs()
 	if err != nil {
 		fmt.Printf("error getting ips: %s\n", err)
 	}
 
 	var ip net.IP
 
-	for _, addr := range addrs {
+	for _, addr := range address {
 		ip = addr.(*net.IPNet).IP
-		if cidrnet.Contains(ip) {
+		if cidrNet.Contains(ip) {
 			break
 		}
 	}
@@ -32,15 +31,15 @@ func main() {
 	c.Start()
 
 	go func() {
-		time.Sleep(10 * time.Second)
-		c.SendDMXToAddress([512]byte{0x00, 0xff, 0x00, 0xff, 0x00}, artnet.Address{Net: 0, SubUni: 0})
-		time.Sleep(5 * time.Second)
-		c.SendDMXToAddress([512]byte{0xff, 0x00, 0x00, 0xff, 0x00}, artnet.Address{Net: 0, SubUni: 0})
-		time.Sleep(5 * time.Second)
-		c.SendDMXToAddress([512]byte{0x00, 0x00, 0xff, 0xff, 0x00}, artnet.Address{Net: 0, SubUni: 0})
-		time.Sleep(5 * time.Second)
-		c.SendDMXToAddress([512]byte{}, artnet.Address{Net: 0, SubUni: 0})
-		time.Sleep(5 * time.Second)
+		time.Sleep(2 * time.Second)
+		c.SendDMXToAddress([512]byte{0x00, 0xff, 0x00, 0xff, 0x00}, artnet.Address{Net: 0, SubUni: 1})
+		time.Sleep(2 * time.Second)
+		c.SendDMXToAddress([512]byte{0xff, 0x00, 0x00, 0x00, 0xff}, artnet.Address{Net: 0, SubUni: 1})
+		time.Sleep(2 * time.Second)
+		c.SendDMXToAddress([512]byte{0x00, 0x00, 0xff, 0xff, 0x00}, artnet.Address{Net: 0, SubUni: 1})
+		time.Sleep(2 * time.Second)
+		c.SendDMXToAddress([512]byte{}, artnet.Address{Net: 0, SubUni: 1})
+		time.Sleep(2 * time.Second)
 	}()
 
 	for {

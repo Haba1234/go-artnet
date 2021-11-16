@@ -8,7 +8,7 @@ func (c *Controller) SetOption(option Option) error {
 	return option(c)
 }
 
-// MaxFPS sets the maximum amount of updates sent out per second
+// MaxFPS sets the maximum amount of updates sent out per second.
 func MaxFPS(fps int) Option {
 	return func(c *Controller) error {
 		c.maxFPS = fps

@@ -1,7 +1,7 @@
 package packet
 
 import (
-	"github.com/jsimonetti/go-artnet/packet/code"
+	"github.com/Haba1234/go-artnet/packet/code"
 )
 
 var _ ArtNetPacket = &ArtDMXPacket{}
@@ -75,7 +75,7 @@ func (p *ArtDMXPacket) MarshalBinary() ([]byte, error) {
 	return marshalPacket(p)
 }
 
-// UnmarshalBinary unmarshals the contents of a byte slice into an ArtDMXPacket.
+// UnmarshalBinary unmarshal the contents of a byte slice into an ArtDMXPacket.
 func (p *ArtDMXPacket) UnmarshalBinary(b []byte) error {
 	if len(b) < 18 {
 		return errInvalidPacket

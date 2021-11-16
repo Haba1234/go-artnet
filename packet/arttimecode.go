@@ -1,7 +1,7 @@
 package packet
 
 import (
-	"github.com/jsimonetti/go-artnet/packet/code"
+	"github.com/Haba1234/go-artnet/packet/code"
 )
 
 var _ ArtNetPacket = &ArtTimeCodePacket{}
@@ -40,7 +40,7 @@ type ArtTimeCodePacket struct {
 	// Minutes 0 - 59
 	Minutes uint8
 
-	//Hours 0 - 23
+	// Hours 0 - 23
 	Hours uint8
 
 	// Type of source, 0 = Film (24fps), 1 = EBU (25fps), 2 = DF (29.97fps), 3 = SMPTE (30fps)
@@ -57,7 +57,7 @@ func (p *ArtTimeCodePacket) MarshalBinary() ([]byte, error) {
 	return marshalPacket(p)
 }
 
-// UnmarshalBinary unmarshals the contents of a byte slice into an ArtTimeCodePacket.
+// UnmarshalBinary unmarshal the contents of a byte slice into an ArtTimeCodePacket.
 func (p *ArtTimeCodePacket) UnmarshalBinary(b []byte) error {
 	return unmarshalPacket(p, b)
 }

@@ -3,7 +3,7 @@ package packet
 import (
 	"fmt"
 
-	"github.com/jsimonetti/go-artnet/packet/code"
+	"github.com/Haba1234/go-artnet/packet/code"
 )
 
 var _ ArtNetPacket = &ArtPollReplyPacket{}
@@ -130,8 +130,14 @@ type ArtPollReplyPacket struct {
 	// Status2 indicates Product capabilities
 	Status2 code.Status2
 
+	// GoodOutput defines output status of the node
+	_ [4]code.GoodOutput
+
+	// Status3 general Status register containing bit fields as follows.
+	Status3 byte
+
 	// Filler bytes. Transmit as zero. For future expansion.
-	_ [26]byte
+	_ [20]byte
 }
 
 // NewArtPollReplyPacket returns a new ArtPollReply Packet
@@ -149,7 +155,7 @@ func (p *ArtPollReplyPacket) MarshalBinary() ([]byte, error) {
 	return marshalPacket(p)
 }
 
-// UnmarshalBinary unmarshals the contents of a byte slice into an ArtPollReplyPacket.
+// UnmarshalBinary unmarshal the contents of a byte slice into an ArtPollReplyPacket.
 func (p *ArtPollReplyPacket) UnmarshalBinary(b []byte) error {
 	return unmarshalPacket(p, b)
 }

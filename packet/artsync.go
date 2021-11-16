@@ -1,7 +1,7 @@
 package packet
 
 import (
-	"github.com/jsimonetti/go-artnet/packet/code"
+	"github.com/Haba1234/go-artnet/packet/code"
 )
 
 var _ ArtNetPacket = &ArtSyncPacket{}
@@ -43,7 +43,7 @@ func (p *ArtSyncPacket) MarshalBinary() ([]byte, error) {
 	return marshalPacket(p)
 }
 
-// UnmarshalBinary unmarshals the contents of a byte slice into an ArtSyncPacket.
+// UnmarshalBinary unmarshal the contents of a byte slice into an ArtSyncPacket.
 func (p *ArtSyncPacket) UnmarshalBinary(b []byte) error {
 	return unmarshalPacket(p, b)
 }
