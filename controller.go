@@ -103,7 +103,7 @@ func NewController(name string, ip net.IP, log Logger, opts ...Option) *Controll
 	c := &Controller{
 		cNode:  NewNode(name, code.StController, ip, log),
 		log:    log,
-		maxFPS: 1, //1000,
+		maxFPS: 1000,
 	}
 
 	for _, opt := range opts {
@@ -383,7 +383,7 @@ func (c *Controller) gcNode() {
 start:
 	for i := range c.Nodes {
 		if c.Nodes[i].LastSeen.Add(staleAfter).Before(time.Now()) {
-			// it has been more then X seconds since we saw this node. remove it now.
+			// it has been more than X seconds since we saw this node. remove it now.
 			c.log.With(Fields{"node": c.Nodes[i].Node.Name, "ip": c.Nodes[i].Node.IP.String()}).Debug("remove stale node")
 
 			// remove references to this node from the output map
